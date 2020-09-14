@@ -13,40 +13,32 @@ namespace LightsOut
     public partial class MainForm : Form
     {
         private const int GridOffset = 25;    // Distance from upper-left side of window         
-        private int GridLength;   // Size in pixels of grid         
-        private const int NumCells = 3;       // Number of cells in grid         
-        private int CellLength { get { return GridLength / NumCells; } }
+        private int GridLength;   // Size in pixels of grid              
+        private int CellLength { get { return GridLength / lightsOutGame.GridSize; } }
 
-        private bool[,] grid;
-        private Random rand;
+        private LightsOutGame lightsOutGame;
 
         public MainForm()
         {
             InitializeComponent();
-            rand = new Random();
-            grid = new bool[NumCells, NumCells];
+
+            lightsOutGame = new LightsOutGame(); //Make sure this is initialized before grid caluculations happen or you'll get a null reference error
+
             GridLength = Math.Min(this.Width, this.Height - 100) - 2 * GridOffset;
-            for (int r = 0; r < NumCells; r++)
-            {
-                for (int c = 0; c < NumCells; c++)
-                {
-                    grid[r, c] = true;
-                }
-            }
         }
 
         private void MainForm_Paint(object sender, PaintEventArgs e)
         {
             Graphics g = e.Graphics;
 
-            for (int r = 0; r < NumCells; r++)
+            for (int r = 0; r < lightsOutGame.GridSize; r++)
             {
-                for (int c = 0; c < NumCells; c++)
+                for (int c = 0; c < lightsOutGame.GridSize; c++)
                 {
                     Brush brush;
                     Pen pen;
 
-                    if (grid[r, c])
+                    if (lightsOutGame.GetGridValue(r, c))
                     {
                         pen = Pens.Black;
                         brush = Brushes.White;
@@ -69,8 +61,8 @@ namespace LightsOut
 
         private void MainForm_MouseDown(object sender, MouseEventArgs e)
         {
-            if (e.X < GridOffset || e.X > CellLength * NumCells + GridOffset ||
-                e.Y < GridOffset || e.Y > CellLength * NumCells + GridOffset)
+            if (e.X < GridOffset || e.X > CellLength * lightsOutGame.GridSize + GridOffset ||
+                e.Y < GridOffset || e.Y > CellLength * lightsOutGame.GridSize + GridOffset)
             {
                 return;
             }
@@ -78,31 +70,18 @@ namespace LightsOut
             int r = (e.Y - GridOffset) / CellLength;
             int c = (e.X - GridOffset) / CellLength;
 
-            for (int i = r - 1; i <= r + 1; i++)
-                for (int j = c - 1; j <= c + 1; j++)
-                    if (i >= 0 && i < NumCells && j >= 0 && j < NumCells)
-                        grid[i, j] = !grid[i, j];
+            lightsOutGame.Move(r, c);
 
             this.Invalidate();
 
-            if (PlayerWon())
+            if (lightsOutGame.IsGameOver())
             {
                 MessageBox.Show(this, "Congratulations!  You've won!", "Lights Out!", MessageBoxButtons.OK, MessageBoxIcon.Information); }
         }
-    
-        private bool PlayerWon ()
-        {
-            for (int r = 0; r < NumCells; r++)
-                for (int c = 0; c < NumCells; c++)
-                    if (grid[r, c])
-                        return false;
-            return true;
-        }
+
         private void NewGameButton_Click(object sender, EventArgs e)
         {
-            for (int r = 0; r < NumCells; r++)
-                for (int c = 0; c < NumCells; c++)
-                    grid[r, c] = rand.Next(2) == 1;
+            lightsOutGame.NewGame();
 
             this.Invalidate();
         }
